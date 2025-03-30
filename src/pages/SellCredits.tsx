@@ -1,3 +1,5 @@
+
+// D:\carbon-connectivity\src\pages\SellCredits.tsx
 import { useState, useEffect, useCallback } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -18,7 +20,6 @@ import { ManageProjectModal } from "@/components/ManageProjectModal";
 import { Web3Provider } from "@/contexts/Web3Context";
 import axios, { AxiosError } from "axios";
 
-// Define Project type based on backend model
 interface Project {
   id: string;
   title: string;
@@ -33,9 +34,7 @@ interface Project {
   adminNotes?: string;
 }
 
-const resourceArticles = [
-  // ... (unchanged)
-];
+const resourceArticles = []; // Assuming unchanged
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -50,10 +49,8 @@ const SellCredits = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  // Centralized token getter with refresh capability
   const getToken = useCallback(() => localStorage.getItem("token"), []);
 
-  // Axios instance creator (called per request to ensure fresh token)
   const createAxiosInstance = useCallback(() => {
     const token = getToken();
     return axios.create({
@@ -64,7 +61,6 @@ const SellCredits = () => {
     });
   }, [getToken]);
 
-  // Fetch projects with loading state
   const fetchProjects = useCallback(async () => {
     const token = getToken();
     if (!token) {
@@ -89,7 +85,7 @@ const SellCredits = () => {
         variant: "destructive" 
       });
       if (axiosError.response?.status === 401) {
-        localStorage.removeItem("token"); // Clear invalid token
+        localStorage.removeItem("token");
       }
     } finally {
       setIsLoading(false);
@@ -102,10 +98,14 @@ const SellCredits = () => {
 
   const getFilteredProjects = () => {
     switch (activeTab) {
-      case "active": return projects.filter(p => p.status === "approved");
-      case "pending": return projects.filter(p => p.status === "pending" || p.status === "reviewing");
-      case "drafts": return projects.filter(p => p.status === "draft" || p.status === "rejected");
-      default: return projects;
+      case "active": 
+        return projects.filter(p => p.status === "approved");
+      case "pending": 
+        return projects.filter(p => p.status === "pending" || p.status === "reviewing");
+      case "drafts": 
+        return projects.filter(p => p.status === "draft" || p.status === "rejected"); // Ensure "rejected" is here
+      default: 
+        return projects;
     }
   };
 
@@ -120,10 +120,30 @@ const SellCredits = () => {
       toast({ title: "Error", description: "Please log in to submit a project", variant: "destructive" });
       return;
     }
-
+  
+    console.log("Project data being sent:", projectData);
+    const formData = new FormData();
+    formData.append("title", projectData.title);
+    formData.append("type", projectData.projectType); // Rename to type
+    formData.append("location", projectData.location);
+    formData.append("price", projectData.price.toString());
+    formData.append("amount", projectData.amount.toString());
+    formData.append("description", projectData.description || "");
+    projectData.files.forEach((file: File, index: number) => {
+      console.log(`Appending file ${index}:`, file.name, file.size, file.type);
+      formData.append("files", file);
+    });
+  
+    // Log FormData contents
+    for (let pair of (formData as any).entries()) {
+      console.log(`${pair[0]}:`, pair[1] instanceof File ? `File: ${pair[1].name}, ${pair[1].size} bytes` : pair[1]);
+    }
+  
     try {
       const axiosInstance = createAxiosInstance();
-      const response = await axiosInstance.post("/projects", projectData);
+      const response = await axiosInstance.post("/projects", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       setProjects([response.data, ...projects]);
       setIsSubmissionSuccessful(true);
       setIsListingModalOpen(false);
@@ -132,6 +152,7 @@ const SellCredits = () => {
     } catch (error) {
       const axiosError = error as AxiosError;
       console.error("Error submitting project:", axiosError);
+      console.log("Backend response:", axiosError.response?.data);
       toast({ 
         title: "Error", 
         description: axiosError.response?.status === 401 
@@ -196,7 +217,7 @@ const SellCredits = () => {
   const handleProjectUpdate = async (projectId: string, updatedData: any) => {
     const token = getToken();
     if (!token) {
-      toast({ title: "Error", description: "Please log in to update projects", variant: "destructive" });
+      toast({ title: "Error matching token", description: "Please log in to update projects", variant: "destructive" });
       return;
     }
 
@@ -394,7 +415,6 @@ const SellCredits = () => {
                   )}
                 </Tabs>
 
-                {/* Seller Resources and Market Trends unchanged */}
                 <div className="mt-16">
                   <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-bold">Seller Resources</h2>
@@ -403,7 +423,7 @@ const SellCredits = () => {
                     </Button>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {resourceArticles.map((article) => (
+                    {resourceArticles.map((article: any) => (
                       <Card key={article.id} className="hover:shadow-md transition-shadow">
                         <CardHeader className="pb-3">
                           <div className="flex justify-between items-start">

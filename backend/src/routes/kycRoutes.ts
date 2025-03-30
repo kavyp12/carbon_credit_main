@@ -1,9 +1,12 @@
 import { Router } from "express";
 import { submitKyc, getPendingKyc, updateKycStatus, getAllKyc } from "../controllers/kycController";
+import fileUpload from "express-fileupload";
+import { authenticateToken } from "../middleware/auth";
 
 const router = Router();
 
-router.post("/submit", async (req, res, next) => {
+// Add fileUpload middleware only to the submit route
+router.post("/submit", fileUpload(), async (req, res, next) => {
   try {
     await submitKyc(req, res);
   } catch (err) {
@@ -11,7 +14,8 @@ router.post("/submit", async (req, res, next) => {
   }
 });
 
-router.get("/pending", async (req, res, next) => {
+// Add authentication to admin routes
+router.get("/pending", authenticateToken, async (req, res, next) => {
   try {
     await getPendingKyc(req, res);
   } catch (err) {
@@ -19,7 +23,7 @@ router.get("/pending", async (req, res, next) => {
   }
 });
 
-router.get("/all", async (req, res, next) => {
+router.get("/all", authenticateToken, async (req, res, next) => {
   try {
     await getAllKyc(req, res);
   }
@@ -28,8 +32,7 @@ router.get("/all", async (req, res, next) => {
   }
 });
 
-
-router.patch("/:id", async (req, res, next) => {
+router.patch("/:id", authenticateToken, async (req, res, next) => {
   try {
     await updateKycStatus(req, res);
   } catch (err) {

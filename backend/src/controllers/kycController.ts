@@ -1,11 +1,21 @@
+// controllers/kycController.ts
 import { Request, Response } from "express";
 import Kyc from "../models/kyc";
 import { UploadedFile } from "express-fileupload";
-import * as fs from "fs/promises"; // Use promises for async operations
+import * as fs from "fs/promises";
 import * as path from "path";
 
 export const submitKyc = async (req: Request, res: Response) => {
+  console.log("Incoming KYC request body:", req.body);
+  console.log("Incoming KYC files:", req.files);
+
   const { userId, wallet, fullName, idNumber, address, additionalInfo } = req.body;
+  
+  // Check if req.files exists - important when using route-specific middleware
+  if (!req.files) {
+    return res.status(400).json({ errors: { files: "No files were uploaded" } });
+  }
+  
   const idDocument = req.files?.idDocument as UploadedFile;
   const selfie = req.files?.selfie as UploadedFile;
 
@@ -18,6 +28,8 @@ export const submitKyc = async (req: Request, res: Response) => {
   if (!idDocument) errors.idDocument = "ID document is required";
   if (!selfie) errors.selfie = "Selfie is required";
 
+  console.log("Validation errors (if any):", errors);
+
   if (Object.keys(errors).length > 0) {
     return res.status(400).json({ errors });
   }
@@ -26,7 +38,7 @@ export const submitKyc = async (req: Request, res: Response) => {
     // Define the uploads directory path
     const uploadDir = path.join(__dirname, "../../public/uploads");
 
-    // Create the uploads directory if it doesn’t exist
+    // Create the uploads directory if it doesn't exist
     await fs.mkdir(uploadDir, { recursive: true });
 
     // Define file paths

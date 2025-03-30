@@ -10,17 +10,18 @@ class Project extends Model {
   public price!: number;
   public amount!: number;
   public amountAvailable!: number;
-  public status!: string;
-  public createdAt!: Date;
+  public description!: string | null;
+  public documents!: string[];
+  public status!: "pending" | "reviewing" | "approved" | "rejected" | "draft";
   public adminNotes?: string;
 }
 
 Project.init(
   {
     id: {
-      type: DataTypes.STRING,
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
-      defaultValue: () => Date.now().toString(),
     },
     userId: {
       type: DataTypes.STRING,
@@ -50,9 +51,16 @@ Project.init(
       type: DataTypes.INTEGER,
       allowNull: false,
     },
+    description: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    documents: {
+      type: DataTypes.ARRAY(DataTypes.STRING),
+      allowNull: true,
+    },
     status: {
-      type: DataTypes.STRING,
-      allowNull: false,
+      type: DataTypes.ENUM("pending", "reviewing", "approved", "rejected", "draft"),
       defaultValue: "pending",
     },
     adminNotes: {
@@ -63,8 +71,6 @@ Project.init(
   {
     sequelize,
     modelName: "Project",
-    tableName: "projects",
-    timestamps: true,
   }
 );
 

@@ -90,7 +90,7 @@ const Login = () => {
       });
 
       // Navigate to SellCredits instead of home
-      navigate("/sell-credits", { state: { user: userData } });
+      navigate("/", { state: { user: userData } });
     } catch (error) {
       console.error("Login error:", error);
       setErrors({ general: "Network error, please try again" });

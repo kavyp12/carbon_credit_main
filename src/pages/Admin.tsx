@@ -1,3 +1,4 @@
+// D:\carbon-connectivity\src\pages\Admin.tsx
 import { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -12,7 +13,6 @@ import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
-// Dummy data remains unchanged
 const pendingVerifications = [
   { id: "v1", projectName: "Solar Farm Project", seller: "GreenTech Solutions", submittedDate: "2023-10-15", creditAmount: 3000, status: "pending" },
   { id: "v2", projectName: "Mangrove Restoration", seller: "Ocean Guardians", submittedDate: "2023-10-10", creditAmount: 1500, status: "pending" },
@@ -35,10 +35,8 @@ const Admin = () => {
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
   const { toast } = useToast();
 
-  // Get token from localStorage
   const token = localStorage.getItem("token");
 
-  // Axios instance with token in headers
   const axiosInstance = axios.create({
     baseURL: "http://localhost:5000/api",
     headers: {
@@ -52,7 +50,7 @@ const Admin = () => {
       fetchPendingProjects();
     } else {
       toast({ title: "Error", description: "Please log in to access admin dashboard", variant: "destructive" });
-      setProjects(pendingVerifications); // Fallback to dummy data
+      setProjects(pendingVerifications);
     }
   }, [token]);
 
@@ -66,17 +64,54 @@ const Admin = () => {
     }
   };
 
-  const fetchPendingProjects = async () => {
-    try {
-      const response = await axiosInstance.get("/projects/pending");
+  // Modified fetchPendingProjects function
+const fetchPendingProjects = async () => {
+  try {
+    const response = await axiosInstance.get("/projects/pending");
+    console.log("Fetched pending projects:", response.data); 
+    
+    if (Array.isArray(response.data)) {
       setProjects(response.data);
-    } catch (error) {
-      console.error("Error fetching projects:", error);
-      toast({ title: "Error", description: "Failed to fetch pending projects. Using demo data.", variant: "destructive" });
-      setProjects(pendingVerifications); // Fallback to dummy data
+    } else {
+      console.error("Expected array but got:", typeof response.data);
+      toast({ title: "Error", description: "Invalid data format received from server", variant: "destructive" });
+      setProjects(pendingVerifications); // Fallback to demo data
     }
-  };
+  } catch (error) {
+    console.error("Error fetching projects:", error);
+    toast({ title: "Error", description: "Failed to fetch pending projects. Using demo data.", variant: "destructive" });
+    setProjects(pendingVerifications);
+  }
+};
 
+// Modified handleProjectAction to refresh data after approval/rejection
+const handleProjectAction = async (id: string, status: "approved" | "rejected") => {
+  if (!token) {
+    toast({ title: "Error", description: "Please log in to perform this action", variant: "destructive" });
+    return;
+  }
+
+  try {
+    console.log(`Sending PATCH to /projects/${id} with status: ${status}`);
+    
+    const response = await axiosInstance.patch(`/projects/${id}`, { status });
+    console.log("Response:", response);
+    
+    toast({ title: `Project ${status}`, description: `Project #${id} has been ${status}` });
+    
+    // Instead of filtering locally, refresh the data from server
+    await fetchPendingProjects();
+    setSelectedProject(null);
+  } catch (error: any) {
+    console.error("Error updating project status:", error);
+    const errorMessage = error.response?.data?.message || error.message || "Failed to update project status";
+    toast({ 
+      title: `Error (${error.response?.status || 'unknown'})`, 
+      description: errorMessage, 
+      variant: "destructive" 
+    });
+  }
+};
   const handleKycAction = async (id: string, status: "approved" | "rejected") => {
     if (!token) {
       toast({ title: "Error", description: "Please log in to perform this action", variant: "destructive" });
@@ -94,26 +129,10 @@ const Admin = () => {
     }
   };
 
-  const handleProjectAction = async (id: string, status: "approved" | "rejected") => {
-    if (!token) {
-      toast({ title: "Error", description: "Please log in to perform this action", variant: "destructive" });
-      return;
-    }
-
-    try {
-      await axiosInstance.patch(`/projects/${id}`, { status });
-      toast({ title: `Project ${status}`, description: `Project #${id} has been ${status}` });
-      fetchPendingProjects();
-      setSelectedProject(null);
-    } catch (error) {
-      console.error("Error updating project status:", error);
-      toast({ title: "Error", description: "Failed to update project status", variant: "destructive" });
-    }
-  };
-
-  const handleSearch = (value: string) => {
-    setSearchTerm(value);
-  };
+  // Removed duplicate 
+  function handleSearch(value: string): void {
+    throw new Error("Function not implemented.");
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -135,7 +154,7 @@ const Admin = () => {
                   className="w-full md:w-64"
                 />
                 <Button variant="outline" size="icon">
-                  <Settings className="h-5 w-5" />
+                    <Settings className="h-5 w-5" />
                 </Button>
               </div>
             </div>
@@ -202,9 +221,22 @@ const Admin = () => {
                                         <p><strong>Location:</strong> {project.location || "N/A"}</p>
                                         <p><strong>Amount:</strong> {project.amount || project.creditAmount}</p>
                                         <p><strong>Price:</strong> ${project.price || "N/A"}</p>
+                                        <p><strong>Description:</strong> {project.description || "N/A"}</p>
                                         <p><strong>Status:</strong> {project.status}</p>
                                         <p><strong>Admin Notes:</strong> {project.adminNotes || "None"}</p>
                                       </div>
+                                      {project.documents && project.documents.length > 0 && (
+                                        <div>
+                                          <h3 className="font-medium">Documents</h3>
+                                          {project.documents.map((doc: string, index: number) => (
+                                            <p key={index}>
+                                              <a href={`http://localhost:5000/${doc}`} target="_blank" rel="noopener noreferrer">
+                                                Document {index + 1}
+                                              </a>
+                                            </p>
+                                          ))}
+                                        </div>
+                                      )}
                                       <div className="flex justify-end gap-2">
                                         <Button variant="default" onClick={() => handleProjectAction(project.id, "approved")}>Approve</Button>
                                         <Button variant="destructive" onClick={() => handleProjectAction(project.id, "rejected")}>Reject</Button>
@@ -368,25 +400,25 @@ const Admin = () => {
                                         <p><strong>Additional Info:</strong> {kyc.additionalInfo || "None"}</p>
                                       </div>
                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                          <h3 className="font-medium">ID Document</h3>
-                                          <img
-                                            src={`http://localhost:5000${kyc.idDocument}`}
-                                            alt="ID Document"
-                                            className="w-full h-auto max-h-64 object-contain rounded-md"
-                                            onError={() => toast({ title: "Error", description: "Failed to load ID document", variant: "destructive" })}
-                                          />
-                                        </div>
-                                        <div>
-                                          <h3 className="font-medium">Selfie</h3>
-                                          <img
-                                            src={`http://localhost:5000${kyc.selfie}`}
-                                            alt="Selfie"
-                                            className="w-full h-auto max-h-64 object-contain rounded-md"
-                                            onError={() => toast({ title: "Error", description: "Failed to load selfie", variant: "destructive" })}
-                                          />
-                                        </div>
-                                      </div>
+           <div>
+    <h3 className="font-medium">ID Document</h3>
+    <img
+      src={`http://localhost:5000${kyc.idDocument.replace("public", "")}`} // Strip "public" from path
+      alt="ID Document"
+      className="w-full h-auto max-h-64 object-contain rounded-md"
+      onError={() => toast({ title: "Error", description: "Failed to load ID document", variant: "destructive" })}
+    />
+  </div>
+  <div>
+    <h3 className="font-medium">Selfie</h3>
+    <img
+      src={`http://localhost:5000${kyc.selfie.replace("public", "")}`} // Strip "public" from path
+      alt="Selfie"
+      className="w-full h-auto max-h-64 object-contain rounded-md"
+      onError={() => toast({ title: "Error", description: "Failed to load selfie", variant: "destructive" })}
+    />
+  </div>
+</div>
                                       <div className="flex justify-end gap-2">
                                         <Button variant="default" onClick={() => handleKycAction(kyc.id, "approved")}>Approve</Button>
                                         <Button variant="destructive" onClick={() => handleKycAction(kyc.id, "rejected")}>Reject</Button>
