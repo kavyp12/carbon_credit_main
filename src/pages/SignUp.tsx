@@ -98,9 +98,17 @@ const SignUp = () => {
         description: "Your account has been created. Please complete KYC verification.",
       });
 
-      // Pass the userId to the KYC page
-      navigate("/kyc", { state: { userId: data.userId } });
+      // Fix: Ensure we're navigating with the correct userId and adding console logs
+      console.log("Navigating to KYC with userId:", data.userId);
+      // Use a slight delay to ensure the navigation happens after the state is updated
+      setTimeout(() => {
+        navigate("/kyc", { 
+          state: { userId: data.userId },
+          replace: true // Use replace to prevent going back to signup
+        });
+      }, 100);
     } catch (error) {
+      console.error("Signup error:", error);
       setErrors({ general: "Network error, please try again" });
       toast({
         title: "Network Error",

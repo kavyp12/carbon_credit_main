@@ -9,10 +9,14 @@ export const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
-  console.log("Navbar user:", user); // Debug
-  const isLoggedIn = !!user.userId;
+  
+  // Check for token based authentication
+  const token = localStorage.getItem("token");
+  const isLoggedIn = !!token;
 
+  // Get user info if available
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  
   const isHomePage = location.pathname === "/";
 
   useEffect(() => {
@@ -23,7 +27,8 @@ export const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const navItems = [
+  // Navigation items that require authentication
+  const protectedNavItems = [
     { name: "Buy Credits", path: "/buy-credits" },
     { name: "Sell Credits", path: "/sell-credits" },
     { name: "Calculator", path: "/calculator" },
@@ -32,7 +37,14 @@ export const Navbar = () => {
     { name: "Forum", path: "/forum" },
   ];
 
+  // Public navigation items (if any)
+  const publicNavItems = [];
+
+  // Show protected items only if logged in
+  const navItems = isLoggedIn ? protectedNavItems : publicNavItems;
+
   const handleLogout = () => {
+    localStorage.removeItem("token");
     localStorage.removeItem("user");
     setMobileMenuOpen(false);
     navigate("/login");
@@ -68,9 +80,11 @@ export const Navbar = () => {
             ))}
           </div>
           <div className="hidden md:flex items-center gap-4">
-            <Button variant="ghost" size="icon" aria-label="Search">
-              <Search className="h-5 w-5" />
-            </Button>
+            {isLoggedIn && (
+              <Button variant="ghost" size="icon" aria-label="Search">
+                <Search className="h-5 w-5" />
+              </Button>
+            )}
             {isLoggedIn ? (
               <>
                 <Link

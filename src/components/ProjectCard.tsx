@@ -43,13 +43,13 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'approved':
-        return { variant: 'green' as const, label: 'Approved' };
+        return { variant: 'success' as const, label: 'Approved' };
       case 'pending':
-        return { variant: 'amber' as const, label: 'Pending Verification' };
+        return { variant: 'warning' as const, label: 'Pending Verification' };
       case 'reviewing':
         return { variant: 'blue' as const, label: 'Under Review' };
       case 'rejected':
-        return { variant: 'red' as const, label: 'Rejected' };
+        return { variant: 'danger' as const, label: 'Rejected' };
       case 'draft':
         return { variant: 'default' as const, label: 'Draft' };
       default:
